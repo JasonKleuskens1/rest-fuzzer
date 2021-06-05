@@ -1,0 +1,47 @@
+-- Alle info om handmatig ingevoerd dependencies te tonen. 
+
+SELECT
+  actions.path, 
+  actions.http_method,
+  parameters.name,
+  actions_depends_on.path,
+  actions_depends_on.http_method,
+  dependencies.parameter_depends_on
+FROM
+  rmd_actions_dependencies dependencies 
+LEFT JOIN
+  rmd_actions actions on actions.id = dependencies.action_id 
+LEFT JOIN
+  rmd_actions actions_depends_on on actions_depends_on.id = dependencies.action_depends_on_id 
+LEFT JOIN
+  rmd_parameters parameters on parameters.id = dependencies.parameter_id 
+where 
+  dependencies.discovery_modus = 'MANUAL' 
+AND
+  actions.sut_id = 2
+ORDER BY
+  actions.path ASC,
+  actions.http_method ASC;  
+  
+-- Resultaat (back-up 31-7):
+
++--------------------+-------------+----------+---------------+-------------+----------------------+
+| path               | http_method | name     | path          | http_method | parameter_depends_on |
++--------------------+-------------+----------+---------------+-------------+----------------------+
+| /wp/v2/blocks/{id} | GET         | password | /wp/v2/blocks | POST        | password             |
+| /wp/v2/blocks/{id} | POST        | password | /wp/v2/blocks | POST        | password             |
+| /wp/v2/blocks/{id} | PATCH       | password | /wp/v2/blocks | POST        | password             |
+| /wp/v2/blocks/{id} | PUT         | password | /wp/v2/blocks | POST        | password             |
+| /wp/v2/comments    | POST        | author   | /wp/v2/users  | POST        | id                   |
+| /wp/v2/comments    | POST        | post     | /wp/v2/posts  | POST        | id                   |
+| /wp/v2/media       | POST        | post     | /wp/v2/posts  | POST        | id                   |
+| /wp/v2/pages/{id}  | GET         | password | /wp/v2/pages  | POST        | password             |
+| /wp/v2/pages/{id}  | POST        | password | /wp/v2/pages  | POST        | password             |
+| /wp/v2/pages/{id}  | PATCH       | password | /wp/v2/pages  | POST        | password             |
+| /wp/v2/pages/{id}  | PUT         | password | /wp/v2/pages  | POST        | password             |
+| /wp/v2/posts       | POST        | author   | /wp/v2/users  | POST        | id                   |
+| /wp/v2/posts/{id}  | GET         | password | /wp/v2/posts  | POST        | password             |
+| /wp/v2/posts/{id}  | POST        | password | /wp/v2/posts  | POST        | password             |
+| /wp/v2/posts/{id}  | PATCH       | password | /wp/v2/posts  | POST        | password             |
+| /wp/v2/posts/{id}  | PUT         | password | /wp/v2/posts  | POST        | password             |
++--------------------+-------------+----------+---------------+-------------+----------------------+

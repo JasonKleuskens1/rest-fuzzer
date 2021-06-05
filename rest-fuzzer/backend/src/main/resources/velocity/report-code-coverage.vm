@@ -1,0 +1,78 @@
+\pgfplotscreateplotcyclelist{line styles}{
+  solid, colour-blue-light,every mark/.append style={solid, fill=colour-blue-light!30!white},mark=otimes\\%
+  solid, colour-blue-light,every mark/.append style={solid, fill=colour-blue-light!30!white},mark=star\\%
+  solid, colour-blue-light,every mark/.append style={solid, fill=colour-blue-light!30!white},mark=*\\%
+  solid, colour-blue-light,every mark/.append style={solid, fill=colour-blue-light!30!white},mark=square*\\%
+  solid, colour-blue-light,every mark/.append style={solid, fill=colour-blue-light!30!white},mark=triangle*\\%
+  solid, colour-blue-light,every mark/.append style={solid, fill=colour-blue-light!30!white},mark=diamond*\\%
+  dotted, colour-blue-light,every mark/.append style={solid, fill=colour-blue-light!30!white},mark=otimes\\%
+  dotted, colour-blue-light,every mark/.append style={solid, fill=colour-blue-light!30!white},mark=star\\%
+  dotted, colour-blue-light,every mark/.append style={solid, fill=colour-blue-light!30!white},mark=*\\%
+  dotted, colour-blue-light,every mark/.append style={solid, fill=colour-blue-light!30!white},mark=square*\\%
+  dotted, colour-blue-light,every mark/.append style={solid, fill=colour-blue-light!30!white},mark=triangle*\\%
+  dotted, colour-blue-light,every mark/.append style={solid, fill=colour-blue-light!30!white},mark=diamond*\\%
+}
+
+\pgfplotstableread[col sep = comma]{
+ #foreach($dataRow in $dataRows)
+ $dataRow
+ #end
+}{\reponsesReportOne}
+
+\begin{figure}[h]
+  \centering
+  \tiny
+  \captionsetup{font=tiny}
+
+  \begin{tikzpicture}[]
+    \tikzset{
+      every pin/.style={text=white,fill=colour-blue-light!50!white,rectangle,rounded corners=3pt,font=\tiny},
+    }
+  
+    \pgfplotsset{
+      every axis plot/.append style={thin},
+      scale only axis,
+      cycle list name=line styles,
+      width=0.9\textwidth,
+      xmin=0,
+      xmax=$xMax,
+      ymin=0,
+      ytick={$yTicks},
+      height=5cm,    
+      grid style=dotted,
+    }
+
+    \begin{axis}[
+      xlabel={time [seconds]},
+      hide y axis,
+      xticklabel pos=right,
+      xlabel near ticks,
+      axis x line*={top},
+      xtick={$xTicks},
+      xticklabels={$xTicksLabels},    
+    ]
+      \addplot[color=white, draw opacity=0] table[x = responses, y = $plots[0][0]] from \reponsesReportOne;
+    \end{axis}
+
+    \begin{axis}[
+      xmajorgrids=true,
+      ymajorgrids=true,
+      xlabel={number of responses},
+      xtick={$xTicks},
+      ylabel={executed lines of code},
+      legend style={at={(0.5,-0.17)},anchor=north,legend cell align=left},
+    ]
+      #foreach($plot in $plots)
+       \addplot table[x = responses, y = $plot[0]] from \reponsesReportOne
+       node[pos=1.0, pin={[pin distance=.15cm]270:$plot[1]}]{};
+       \addlegendentry{$plot[0]}
+      #end
+    \end{axis}
+  \end{tikzpicture}
+
+  \caption{TODO: Caption here}
+  \label{figure:report-code-coverage}
+
+  \normalsize
+  \captionsetup{font=normalsize}  
+\end{figure}

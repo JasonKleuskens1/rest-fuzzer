@@ -1,0 +1,11 @@
+# Enable XDebug on XAMPP:
+
+- https://gist.github.com/odan/1abe76d373a9cbb15bed
+
+# php-code-coverage
+
+- https://github.com/sebastianbergmann/php-code-coverage
+
+# composer
+
+- https://getcomposer.org/download/
