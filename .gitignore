@@ -1,0 +1,12 @@
+# No maven target folder(s)
+/target/*
+*/target/*
+
+# No node 
+fuzz-rest-gui/vuejs/node/*
+/target/
+
+# No Apple junk
+.DS_Store
+node_modules/
+/dist/

@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Random;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.RandomStringUtils;
@@ -32,8 +34,10 @@ public class ParameterUtil {
     private static final String FORMAT_URI = "uri";
     private static final String FORMAT_EMAIL = "email";
     private static final String FORMAT_DATETIME = "date-time";
+    private static final String FORMAT_UUID = "uuid";
 
     private static final String FORMAT_INT64 = "int64";
+    
 
     @Autowired
     private DependencyUtil dependencyUtil;
@@ -140,18 +144,59 @@ public class ParameterUtil {
         if (parameter.getMetaDataTuples().containsKey(RmdParameter.META_DATA_FORMAT)) {
             switch (format) {
             case FORMAT_IP:
-                return "127.0.0.1";
+                return generateRandomIPAddress();
             case FORMAT_URI:
                 return "/uri";
             case FORMAT_EMAIL:
                 return generateRandomValidEmail();
             case FORMAT_DATETIME:
-                return "2020-01-01 00:00:00";
+                return "2021-01-01 00:00:00";
+            case FORMAT_UUID:
+            	return generateRandomUUID();
             default:
                 logger.error(String.format(Constants.Fuzzer.META_DATA_INVALID, RmdParameter.META_DATA_FORMAT, format));
             }
         }
 
+
+		if (parameter.getMetaDataTuplesJson().contains("VALUE")) {
+
+			if (parameter.getMetaDataTuplesJson().contains("MIN_VALUE") && parameter.getMetaDataTuplesJson().contains("MAX_VALUE")) {
+				String[] splittedString = parameter.getMetaDataTuplesJson().split(",");
+				String minValue = splittedString[0].replace("\"MIN_VALUE\":", "").replace("{", "").replace("}",
+						"");
+				String maxValue = splittedString[1].replace("\"MAX_VALUE\":", "").replace("{", "").replace("}",
+						"");
+				Random r = new Random();
+				int low = Integer.parseInt(minValue);
+				int high = Integer.parseInt(maxValue);
+				int result = r.nextInt(high - low) + low;
+				return Integer.toString(result);
+			} else if (parameter.getMetaDataTuplesJson().contains("MIN_VALUE")) {
+
+				String[] splittedString = parameter.getMetaDataTuplesJson().split(",");
+				String minValue = splittedString[0].replace("\"MIN_VALUE\":", "").replace("{", "").replace("}",
+						"");
+				Random r = new Random();
+				int low = Integer.parseInt(minValue);
+				int result = r.nextInt(5) + low;
+				return Integer.toString(result);
+			} else if (parameter.getMetaDataTuplesJson().contains("MAX_VALUE")) {
+				String[] splittedString = parameter.getMetaDataTuplesJson().split(",");
+				String minValue = splittedString[0].replace("\"MAX_VALUE\":", "").replace("{", "").replace("}",
+						"");
+				Random r = new Random();
+				int high = Integer.parseInt(minValue);
+				int result = r.nextInt(high);
+				return Integer.toString(result);
+			}
+		}
+		
+		if(parameter.getDescription().contains(FORMAT_UUID)) 
+		{
+        	return generateRandomUUID();		 	
+		}
+        
         return RandomStringUtils.randomAlphabetic(5);
     }
 
@@ -159,7 +204,24 @@ public class ParameterUtil {
         return String.format("%s@%s.%s", RandomStringUtils.randomAlphabetic(5).toLowerCase(),
                 RandomStringUtils.randomAlphabetic(5).toLowerCase(),
                 RandomStringUtils.randomAlphabetic(2).toLowerCase());
-    }
+    }    
+
+
+	private String generateRandomIPAddress() {
+		Random r = new Random();
+		return r.nextInt(256) + "." + r.nextInt(256) + "." + r.nextInt(256) + "." + r.nextInt(256);
+	}
+
+	private String generateRandomUUID() {
+		UUID uuid = UUID.randomUUID();
+		return uuid.toString();
+	}
+
+	private String generateRandomDateTime() {
+		Random r = new Random();
+		return r.nextInt(2100) + "-" + RandomUtils.nextInt(100, 2) + "-" + (r.nextInt(28) + 1) + " " + r.nextInt(24) + ":"
+				+ r.nextInt(60) + ":" + r.nextInt(60);
+	}
 
     private Object getIntegerValue(RmdParameter parameter, String format) {
         if (parameter.getMetaDataTuples().containsKey(RmdParameter.META_DATA_FORMAT)) {

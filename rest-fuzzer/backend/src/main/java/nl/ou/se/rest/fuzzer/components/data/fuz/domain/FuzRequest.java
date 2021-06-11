@@ -141,6 +141,39 @@ public class FuzRequest implements Comparable<FuzRequest> {
         }
     }
 
+    public void replaceParameterValue(RmdParameter parameter, int dictionaryValue) {
+        Map<String, Object> map = this.getParameterMap(parameter.getContext());
+
+        if (map != null && map.containsKey(parameter.getName())) {
+            map.put(parameter.getName(), dictionaryValue);
+            this.setParameterMap(parameter.getContext(), map);
+        } else {
+            throw new IllegalArgumentException(
+                    String.format(Constants.Fuzzer.PARAMETER_UNKNOWN, parameter.getId(), parameter.getName()));
+        }
+    }
+
+    public void replaceParameterValue(RmdParameter parameter, boolean dictionaryValue) {
+        Map<String, Object> map = this.getParameterMap(parameter.getContext());
+
+        if (map != null && map.containsKey(parameter.getName())) {
+            map.put(parameter.getName(), dictionaryValue);
+            this.setParameterMap(parameter.getContext(), map);
+        } else {
+            throw new IllegalArgumentException(
+                    String.format(Constants.Fuzzer.PARAMETER_UNKNOWN, parameter.getId(), parameter.getName()));
+        }
+    }
+
+    public void removeParameter(RmdParameter parameter) {
+        Map<String, Object> map = this.getParameterMap(parameter.getContext());
+
+        if (map != null && map.containsKey(parameter.getName())) {
+            map.remove(parameter.getName());
+            this.setParameterMap(parameter.getContext(), map);
+        }
+    }
+
     public FuzRequest getDeepCopy() {
         FuzRequestFactory requestFactory = new FuzRequestFactory();
 
