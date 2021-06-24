@@ -65,7 +65,7 @@ public class ParameterUtil {
             return defaultValue;
         }
 
-        // model-based (dictionary) - context from previous requests in sequence
+        // 11. model-based whitebox - get context from previous requests in the sequence
         if (sequence != null && dependencyUtil.hasDependency(parameter, sequence)) {
             return dependencyUtil.getValueFromPreviousRequestInSequence(parameter, sequence);
         }
@@ -146,11 +146,11 @@ public class ParameterUtil {
             case FORMAT_IP:
                 return generateRandomIPAddress();
             case FORMAT_URI:
-                return "/uri";
+                return generateRandomUri();
             case FORMAT_EMAIL:
                 return generateRandomValidEmail();
             case FORMAT_DATETIME:
-                return "2021-01-01 00:00:00";
+                return generateRandomDateTime();
             case FORMAT_UUID:
             	return generateRandomUUID();
             default:
@@ -221,6 +221,11 @@ public class ParameterUtil {
 		Random r = new Random();
 		return r.nextInt(2100) + "-" + RandomUtils.nextInt(100, 2) + "-" + (r.nextInt(28) + 1) + " " + r.nextInt(24) + ":"
 				+ r.nextInt(60) + ":" + r.nextInt(60);
+	}
+
+	private String generateRandomUri() {
+		String allowedChars = "abcdefghijklmnopqrstuvwxyz" + "1234567890" + "_-.';";
+		return "http://www." + RandomStringUtils.random(RandomUtils.nextInt(30, 2), allowedChars) + ".nl";
 	}
 
     private Object getIntegerValue(RmdParameter parameter, String format) {

@@ -23,7 +23,6 @@ import nl.ou.se.rest.fuzzer.components.data.rmd.dao.RmdActionDependencyService;
 import nl.ou.se.rest.fuzzer.components.data.rmd.dao.RmdActionService;
 import nl.ou.se.rest.fuzzer.components.data.rmd.domain.HttpMethod;
 import nl.ou.se.rest.fuzzer.components.data.rmd.domain.ParameterContext;
-import nl.ou.se.rest.fuzzer.components.data.rmd.domain.ParameterType;
 import nl.ou.se.rest.fuzzer.components.data.rmd.domain.RmdAction;
 import nl.ou.se.rest.fuzzer.components.data.rmd.domain.RmdActionDependency;
 import nl.ou.se.rest.fuzzer.components.data.rmd.domain.RmdParameter;
@@ -65,13 +64,17 @@ public class FuzzerModelBasedWhitebox extends FuzzerBase implements Fuzzer {
 
 	private FuzSequenceFactory sequenceFactory = new FuzSequenceFactory();
 
+	/**
+	 * Start the whitebox fuzzing process
+	 */
 	public void start(FuzProject project, Task task) {
 		this.project = project;
 
-		// get meta
+		// get meta data
 		Integer maxSequenceLength = metaDataUtil.getIntegerValue(MetaDataUtil.Meta.MAX_SEQUENCE_LENGTH);
 		Integer duration = metaDataUtil.getIntegerValue(MetaDataUtil.Meta.DURATION);
-
+		
+		// determine timeout
 		long millis = System.currentTimeMillis();
 		Date startDate = new java.sql.Date(millis);
 
@@ -84,7 +87,8 @@ public class FuzzerModelBasedWhitebox extends FuzzerBase implements Fuzzer {
 		// authentication
 		executorUtil.setAuthentication(metaDataUtil.getAuthentication());
 
-		// get sequences
+		// 2. get locations L ← IDENTIFYCRITICALLOCATIONS (P )
+		// get action locations
 		List<RmdAction> allActions = actionService.findBySutId(this.project.getSut().getId());
 		allActions = metaDataUtil.getFilteredActions(allActions);
 
@@ -94,13 +98,17 @@ public class FuzzerModelBasedWhitebox extends FuzzerBase implements Fuzzer {
 		// get dependencies for SUT.
 		List<RmdActionDependency> dependencies = actionDependencyService.findBySutId(this.project.getSut().getId());
 
-		// init requestUtil
+		// 5. Setup requestUtil responsible for generating inputs.
 		requestUtil.init(project, metaDataUtil.getDefaults());
 
 		SequenceUtil sequenceUtil = new SequenceUtil(allActions, actions, dependencies);
 
+		
+		// 8. while timeout not exceeded do 
 		while (isWithinRange(startDate, endDate)) {
 
+			// 9. Choose target location:  Target location l ← CHOOSETARGET(L )
+			
 			// get sequences based on SUT.
 			List<String> sequences = sequenceUtil.getValidSequences(maxSequenceLength);
 
@@ -115,14 +123,14 @@ public class FuzzerModelBasedWhitebox extends FuzzerBase implements Fuzzer {
 					FuzSequence sequence = sequenceFactory.create(sequencePosition, project).build();
 					sequenceService.save(sequence);
 					if (isWithinRange(startDate, endDate)) {
-						// for each item in sequence
+						// for each action in a sequence
 						for (RmdAction a : actionsFromSequence) {
 							if (isWithinRange(startDate, endDate) && a != null) {
-
+								// 10-15. Create the request and perform input generation.
 								FuzRequest request = requestUtil.getRequestFromAction(a, sequence);
 
+								// increase chance for valid GET request by excluding non-required parameters.
 								List<RmdParameter> parameters = RandomUtil.getFromValues(a.getParameters(), null);
-
 								if (request.getHttpMethod() == HttpMethod.GET) {
 									for (RmdParameter param : parameters) {
 										if (param.getRequired() == false) 
@@ -131,28 +139,23 @@ public class FuzzerModelBasedWhitebox extends FuzzerBase implements Fuzzer {
 										}
 									}
 								}
-
 								requestService.save(request);
 
 								// update and save sequence
 								sequence.addRequest(request);
 								sequence = sequenceService.save(sequence);
 
-								// execute requests
+								// 16. execute requests
 								FuzResponse response = executorUtil.processRequest(request);
 								responseService.save(response);
 
-								// abort sequence
+								// abort sequence because the first request did not result within the HTTP 200 range.
 								if (response.getStatusCode() < 200 || response.getStatusCode() >= 300) {
 									status = FuzSequenceStatus.ABORTED;
 									break;
 								}
 
-								// update progress
-								int runtimeInSecs = (int) ((System.currentTimeMillis() - millis) / 1000);
-								if (runtimeInSecs > fuzzerDurationInSecs)
-									runtimeInSecs = fuzzerDurationInSecs;
-								saveTaskProgress(task, runtimeInSecs, fuzzerDurationInSecs);
+								updateProgress(task, millis, fuzzerDurationInSecs);
 							}
 						}
 					} else {
@@ -162,14 +165,17 @@ public class FuzzerModelBasedWhitebox extends FuzzerBase implements Fuzzer {
 					sequence.setStatus(status);
 					sequenceService.save(sequence);
 				}
-
-				// update progress
-				int runtimeInSecs = (int) ((System.currentTimeMillis() - millis) / 1000);
-				if (runtimeInSecs > fuzzerDurationInSecs)
-					runtimeInSecs = fuzzerDurationInSecs;
-				saveTaskProgress(task, runtimeInSecs, fuzzerDurationInSecs);
+				updateProgress(task, millis, fuzzerDurationInSecs);
 			}
 		}
+	}
+	
+	private void updateProgress(Task task, long startTime, int fuzzerDurationInSecs) {
+		// update progress
+		int runtimeInSecs = (int) ((System.currentTimeMillis() - startTime) / 1000);
+		if (runtimeInSecs > fuzzerDurationInSecs)
+			runtimeInSecs = fuzzerDurationInSecs;
+		saveTaskProgress(task, runtimeInSecs, fuzzerDurationInSecs);
 	}
 
 	public Boolean isMetaDataValid(Map<String, Object> metaDataTuples) {
@@ -183,6 +189,9 @@ public class FuzzerModelBasedWhitebox extends FuzzerBase implements Fuzzer {
 		return !(currentDate.before(startDate) || currentDate.after(endDate));
 	}
 
+
+	@Deprecated // This function was used for local testing. But is integrated in ParameterUtil.getStringValue(RmdParameter parameter, String format);
+	@SuppressWarnings("unused")
 	private String getRandomString(ParameterContext context, String format, String description) {
 		if (context == ParameterContext.FORMDATA) {
 

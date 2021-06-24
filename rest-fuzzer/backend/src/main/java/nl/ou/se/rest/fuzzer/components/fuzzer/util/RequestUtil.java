@@ -37,7 +37,7 @@ public class RequestUtil {
             requestFactory.addParameterMap(context,
                     parameterUtil.createParameterMap(action.getParametersByContext(context), sequence));
         }
-
+        // 15. build the valid input
         return requestFactory.build();
     }
 }
