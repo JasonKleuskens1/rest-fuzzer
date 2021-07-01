@@ -58,6 +58,8 @@ public class RmdParameter implements Comparable<RmdParameter> {
 
     @NotNull
     private Boolean required;
+    @NotNull
+    private Boolean requiredNonFuzzable;
 
     private String description;
 
@@ -86,6 +88,8 @@ public class RmdParameter implements Comparable<RmdParameter> {
         this.position = position;
         this.name = name;
         this.required = required;
+        this.required = false;
+        
         this.description = description;
         this.type = ParameterType.valueOf(type);
         this.context = ParameterContext.valueOf(context);

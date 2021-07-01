@@ -1,8 +1,8 @@
 {
   "authentication": {
     "method": "BASIC",
-    "username": "wordpress",
-    "password": "wordpress"
+    "username": root
+    "password": "root"
   },
   "includeActions": [
     {

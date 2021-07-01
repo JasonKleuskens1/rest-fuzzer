@@ -34,10 +34,12 @@ public class RequestUtil {
         requestFactory.create(this.project, action);
 
         for (ParameterContext context : ParameterContext.values()) {
+        	
+        	// 11-12. Create file
             requestFactory.addParameterMap(context,
                     parameterUtil.createParameterMap(action.getParametersByContext(context), sequence));
         }
-        // 15. build the valid input
+        // 13. build the valid input
         return requestFactory.build();
     }
 }

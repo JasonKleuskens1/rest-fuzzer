@@ -21,16 +21,13 @@ import nl.ou.se.rest.fuzzer.components.data.fuz.domain.FuzSequenceStatus;
 import nl.ou.se.rest.fuzzer.components.data.fuz.factory.FuzSequenceFactory;
 import nl.ou.se.rest.fuzzer.components.data.rmd.dao.RmdActionDependencyService;
 import nl.ou.se.rest.fuzzer.components.data.rmd.dao.RmdActionService;
-import nl.ou.se.rest.fuzzer.components.data.rmd.domain.HttpMethod;
 import nl.ou.se.rest.fuzzer.components.data.rmd.domain.ParameterContext;
 import nl.ou.se.rest.fuzzer.components.data.rmd.domain.RmdAction;
 import nl.ou.se.rest.fuzzer.components.data.rmd.domain.RmdActionDependency;
-import nl.ou.se.rest.fuzzer.components.data.rmd.domain.RmdParameter;
 import nl.ou.se.rest.fuzzer.components.data.task.domain.Task;
 import nl.ou.se.rest.fuzzer.components.fuzzer.executor.ExecutorUtil;
 import nl.ou.se.rest.fuzzer.components.fuzzer.metadata.MetaDataUtil;
 import nl.ou.se.rest.fuzzer.components.fuzzer.metadata.MetaDataUtil.Meta;
-import nl.ou.se.rest.fuzzer.components.fuzzer.util.RandomUtil;
 import nl.ou.se.rest.fuzzer.components.fuzzer.util.RequestUtil;
 import nl.ou.se.rest.fuzzer.components.fuzzer.util.SequenceUtil;
 
@@ -72,37 +69,33 @@ public class FuzzerModelBasedWhitebox extends FuzzerBase implements Fuzzer {
 
 		// get meta data
 		Integer maxSequenceLength = metaDataUtil.getIntegerValue(MetaDataUtil.Meta.MAX_SEQUENCE_LENGTH);
-		Integer duration = metaDataUtil.getIntegerValue(MetaDataUtil.Meta.DURATION);
+		Integer duration = metaDataUtil.getIntegerValue(MetaDataUtil.Meta.DURATION);		
+		int durationInSecs = (duration * 60);
 		
 		// determine timeout
 		long millis = System.currentTimeMillis();
 		Date startDate = new java.sql.Date(millis);
+		Date endDate = new Date(millis + ((long)duration * 60 * 1000));
 
-		long timeInSecs = System.currentTimeMillis();
-		long fuzzerDuration = (duration * 60 * 1000);
-		Date endDate = new Date(timeInSecs + fuzzerDuration);
-
-		int fuzzerDurationInSecs = (duration * 60);
-
-		// authentication
-		executorUtil.setAuthentication(metaDataUtil.getAuthentication());
-
-		// 2. get locations L ← IDENTIFYCRITICALLOCATIONS (P )
-		// get action locations
+		// 2. get all actions (locations) from the model of Program P (the SUT)
 		List<RmdAction> allActions = actionService.findBySutId(this.project.getSut().getId());
 		allActions = metaDataUtil.getFilteredActions(allActions);
 
 		List<RmdAction> actions = actionService.findBySutId(this.project.getSut().getId());
-		actions = metaDataUtil.getCorrectedActions(actions);
+		actions = metaDataUtil.getCorrectedActions(actions);	
 
-		// get dependencies for SUT.
+		// 4. Check if the test suite (executor) already has authentication.
+		if (executorUtil.getAuthentication() == null) {
+			// 5. Instantiate valid input by setting authentication.
+			executorUtil.setAuthentication(metaDataUtil.getAuthentication());
+		}
+		
+		// 5. Initialise requestUtil responsible for generating inputs.
+		requestUtil.init(project, metaDataUtil.getDefaults());		
+		
+		// 5. Instantiate sequence util, which is responsible for generating the sequences of dependent endpoints.		
 		List<RmdActionDependency> dependencies = actionDependencyService.findBySutId(this.project.getSut().getId());
-
-		// 5. Setup requestUtil responsible for generating inputs.
-		requestUtil.init(project, metaDataUtil.getDefaults());
-
 		SequenceUtil sequenceUtil = new SequenceUtil(allActions, actions, dependencies);
-
 		
 		// 8. while timeout not exceeded do 
 		while (isWithinRange(startDate, endDate)) {
@@ -126,26 +119,16 @@ public class FuzzerModelBasedWhitebox extends FuzzerBase implements Fuzzer {
 						// for each action in a sequence
 						for (RmdAction a : actionsFromSequence) {
 							if (isWithinRange(startDate, endDate) && a != null) {
-								// 10-15. Create the request and perform input generation.
+								// 10-13. Create the request and perform input generation. Use older responses to fill the request with valid parameters.
 								FuzRequest request = requestUtil.getRequestFromAction(a, sequence);
 
-								// increase chance for valid GET request by excluding non-required parameters.
-								List<RmdParameter> parameters = RandomUtil.getFromValues(a.getParameters(), null);
-								if (request.getHttpMethod() == HttpMethod.GET) {
-									for (RmdParameter param : parameters) {
-										if (param.getRequired() == false) 
-										{
-											request.removeParameter(param);
-										}
-									}
-								}
 								requestService.save(request);
 
 								// update and save sequence
 								sequence.addRequest(request);
 								sequence = sequenceService.save(sequence);
 
-								// 16. execute requests
+								// 14. execute requests
 								FuzResponse response = executorUtil.processRequest(request);
 								responseService.save(response);
 
@@ -154,8 +137,7 @@ public class FuzzerModelBasedWhitebox extends FuzzerBase implements Fuzzer {
 									status = FuzSequenceStatus.ABORTED;
 									break;
 								}
-
-								updateProgress(task, millis, fuzzerDurationInSecs);
+								updateProgress(task, millis, durationInSecs);
 							}
 						}
 					} else {
@@ -165,17 +147,17 @@ public class FuzzerModelBasedWhitebox extends FuzzerBase implements Fuzzer {
 					sequence.setStatus(status);
 					sequenceService.save(sequence);
 				}
-				updateProgress(task, millis, fuzzerDurationInSecs);
+				updateProgress(task, millis, durationInSecs);
 			}
 		}
 	}
 	
-	private void updateProgress(Task task, long startTime, int fuzzerDurationInSecs) {
+	private void updateProgress(Task task, long startTime, int durationInSecs) {
 		// update progress
 		int runtimeInSecs = (int) ((System.currentTimeMillis() - startTime) / 1000);
-		if (runtimeInSecs > fuzzerDurationInSecs)
-			runtimeInSecs = fuzzerDurationInSecs;
-		saveTaskProgress(task, runtimeInSecs, fuzzerDurationInSecs);
+		if (runtimeInSecs > durationInSecs)
+			runtimeInSecs = durationInSecs;
+		saveTaskProgress(task, runtimeInSecs, durationInSecs);
 	}
 
 	public Boolean isMetaDataValid(Map<String, Object> metaDataTuples) {
@@ -190,7 +172,7 @@ public class FuzzerModelBasedWhitebox extends FuzzerBase implements Fuzzer {
 	}
 
 
-	@Deprecated // This function was used for local testing. But is integrated in ParameterUtil.getStringValue(RmdParameter parameter, String format);
+	@Deprecated // This function has been used for local testing. But is integrated in ParameterUtil.getStringValue(RmdParameter parameter, String format);
 	@SuppressWarnings("unused")
 	private String getRandomString(ParameterContext context, String format, String description) {
 		if (context == ParameterContext.FORMDATA) {

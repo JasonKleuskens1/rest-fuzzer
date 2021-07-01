@@ -56,6 +56,12 @@ public class ExecutorUtil {
         }
     }
 
+    // get authentication
+    public Authentication getAuthentication() {
+    	return this.authentication;
+    }
+    
+    // set authentication
     public void setAuthentication(Authentication authentication) {
         this.authentication = authentication;
     }
