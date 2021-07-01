@@ -112,6 +112,46 @@
           <hr />
         </div>
 
+        
+
+        <div v-if="isTypeMbWhitebox">
+          <b-form-group
+            label="Required non-fuzzable threshold value:"
+            label-for="required-nonfuzzable-threshold-score"
+            description="The threshold score before making parameter required non-fuzzable"
+          >
+            <b-form-input
+              id="sequence-length"
+              v-model="metaDataTuplesJson.thresholdRequiredNonFuzzableValue"
+              type="range"
+              min="1"
+              max="100"
+            ></b-form-input>
+            <div class="mt-2">Required non-fuzzable threshold score: {{ metaDataTuplesJson.thresholdRequiredNonFuzzableValue }}</div>
+          </b-form-group>
+
+          <hr />
+        </div>
+        
+        <div v-if="isTypeMbWhitebox">
+          <b-form-group
+            label="Required non-fuzzable min. executed tests threshold:"
+            label-for="required-nonfuzzable-threshold-min-requests"
+            description="Minimum of performed tests before making parameters required non-fuzzable"
+          >
+            <b-form-input
+              id="sequence-length"
+              v-model="metaDataTuplesJson.thresholdRequiredNonFuzzableMinimumRequests"
+              type="range"
+              min="1"
+              max="100"
+            ></b-form-input>
+            <div class="mt-2">Required non-fuzzable threshold minimum requests: {{ metaDataTuplesJson.thresholdRequiredNonFuzzableMinimumRequests }}</div>
+          </b-form-group>
+
+          <hr />
+        </div>
+
         <div v-if="!isTypeMbBlackbox && !isTypeMbWhitebox">
           <b-form-group
             label="Maximum number of requests:"
@@ -220,6 +260,8 @@ const DEFAULT_META = {
   maxDictParams: 1,
   maxDictItems: 1,
   duration: 1,
+  thresholdRequiredNonFuzzableMinimumRequests: 100,
+  thresholdRequiredNonFuzzableValue: 100
 };
 
 export default {
